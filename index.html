@@ -1,879 +1,410 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#102b3f" />
-  <meta name="description" content="Interactive solvent surge tank and PI level-control simulator for process engineering students." />
-  <title>Surge Tank Lab | Process Control</title>
-  <style>
-    :root {
-      --navy: #102b3f;
-      --navy-2: #1e4055;
-      --green: #17825d;
-      --green-dark: #116747;
-      --green-pale: #e9f5ef;
-      --blue: #2776b8;
-      --blue-pale: #edf5fb;
-      --amber: #bd7818;
-      --amber-pale: #fff5e5;
-      --red: #bd4545;
-      --red-pale: #fff0ef;
-      --ink: #1c2d38;
-      --muted: #647783;
-      --line: #dce5e9;
-      --panel: #ffffff;
-      --background: #f3f7f8;
-      --shadow: 0 8px 26px rgba(16, 43, 63, .055);
-    }
-
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      background: var(--background);
-      color: var(--ink);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.45;
-    }
-    button, input, select { font: inherit; }
-    button { cursor: pointer; }
-
-    .topbar {
-      color: #fff;
-      background: linear-gradient(115deg, var(--navy), #173e50 70%, #1c5b4a);
-      padding: 22px 18px 25px;
-    }
-    .topbar-inner, main, .footer-inner { max-width: 1180px; margin: 0 auto; }
-    .brand-row { display: flex; align-items: center; gap: 12px; }
-    .brand-mark {
-      width: 42px; height: 42px; border-radius: 12px;
-      display: grid; place-items: center; background: rgba(255,255,255,.13);
-      border: 1px solid rgba(255,255,255,.22); flex: 0 0 auto;
-    }
-    .brand-mark svg { width: 26px; height: 26px; }
-    h1 { margin: 0; font-size: clamp(1.35rem, 3vw, 1.9rem); letter-spacing: -.035em; }
-    .subtitle { color: #d4e3e7; margin: 4px 0 0; font-size: .94rem; }
-    .top-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 17px; }
-    .top-pill {
-      padding: 5px 10px; border-radius: 999px; color: #e8f3f1;
-      border: 1px solid rgba(255,255,255,.23); background: rgba(255,255,255,.08); font-size: .76rem;
-    }
-
-    main { padding: 20px 16px 34px; }
-    .intro {
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 18px;
-      margin: 2px 0 17px;
-    }
-    .intro h2 { margin: 0 0 5px; font-size: 1.12rem; color: var(--navy); }
-    .intro p { margin: 0; color: var(--muted); font-size: .9rem; max-width: 760px; }
-    .live-badge { white-space: nowrap; color: var(--green-dark); background: var(--green-pale); border: 1px solid #cce7d8; border-radius: 999px; padding: 6px 10px; font-size: .76rem; font-weight: 700; }
-
-    .toolbar {
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-      padding: 12px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
-      box-shadow: var(--shadow); margin-bottom: 15px;
-    }
-    .mode-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .mode-label { color: var(--muted); font-size: .8rem; font-weight: 700; margin-right: 3px; }
-    .mode-btn, .action-btn {
-      border: 1px solid var(--line); border-radius: 9px; padding: 9px 13px; background: white;
-      color: var(--navy); font-size: .84rem; font-weight: 700; transition: .15s ease;
-    }
-    .mode-btn.active { color: white; border-color: var(--green); background: var(--green); }
-    .action-group { display: flex; gap: 7px; flex-wrap: wrap; }
-    .action-btn.primary { background: var(--navy); border-color: var(--navy); color: white; }
-    .action-btn:hover, .mode-btn:hover { transform: translateY(-1px); }
-    .action-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
-
-    .status-line {
-      display: flex; align-items: center; gap: 8px; min-height: 35px; padding: 7px 3px 10px;
-      color: var(--muted); font-size: .82rem;
-    }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #9aaab2; flex: 0 0 auto; }
-    .status-dot.running { background: #1b9c68; box-shadow: 0 0 0 4px #dff3e9; }
-    .status-dot.warning { background: var(--amber); }
-
-    .main-grid { display: grid; grid-template-columns: minmax(300px, .92fr) minmax(0, 1.55fr); gap: 15px; align-items: start; }
-    .panel {
-      min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 15px;
-      box-shadow: var(--shadow); overflow: hidden;
-    }
-    .panel-head { padding: 15px 17px 12px; border-bottom: 1px solid #edf1f3; }
-    .panel-head h3 { margin: 0; font-size: .99rem; color: var(--navy); }
-    .panel-head p { margin: 4px 0 0; font-size: .78rem; color: var(--muted); }
-    .panel-body { padding: 15px 17px 17px; }
-
-    .tank-wrap { background: linear-gradient(180deg, #f8fbfc, #fff); padding: 9px 12px 3px; }
-    .tank-svg { display: block; width: 100%; max-width: 390px; height: 270px; margin: 0 auto; overflow: visible; }
-    .tank-readouts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 14px 14px; }
-    .mini-stat { padding: 9px 8px; border: 1px solid #e8eef0; border-radius: 10px; background: #fbfdfd; min-width: 0; }
-    .mini-stat .label { display: block; color: var(--muted); font-size: .69rem; margin-bottom: 3px; }
-    .mini-stat strong { display: block; font-size: .94rem; color: var(--navy); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-    .tank-note { margin: 0 14px 14px; padding: 9px 10px; border-radius: 9px; background: var(--blue-pale); color: #335b75; font-size: .75rem; }
-
-    .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 15px; }
-    .metric {
-      padding: 12px 13px; border: 1px solid var(--line); background: white; border-radius: 12px;
-      box-shadow: var(--shadow); min-width: 0;
-    }
-    .metric-label { color: var(--muted); font-size: .72rem; display: block; margin-bottom: 5px; }
-    .metric-value { color: var(--navy); font-weight: 800; font-size: clamp(1.03rem, 2vw, 1.3rem); letter-spacing: -.025em; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-    .metric-unit { color: var(--muted); font-size: .68rem; font-weight: 500; margin-left: 3px; }
-
-    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-    .chart-panel { min-width: 0; }
-    .chart-wrap { padding: 7px 10px 12px; }
-    canvas { width: 100%; height: 225px; display: block; }
-    .legend { display: flex; gap: 13px; flex-wrap: wrap; padding: 0 13px 12px; color: var(--muted); font-size: .72rem; }
-    .legend-item { display: inline-flex; align-items: center; gap: 6px; }
-    .legend-line { display: inline-block; width: 18px; height: 3px; border-radius: 4px; }
-    .legend-dash { background: repeating-linear-gradient(90deg, #bd7818 0 5px, transparent 5px 8px); }
-
-    .controls-panel { margin-top: 15px; }
-    .controls-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 22px; }
-    .control-section h4 { margin: 0 0 11px; color: var(--green-dark); text-transform: uppercase; letter-spacing: .07em; font-size: .73rem; }
-    .control-row { margin-bottom: 13px; }
-    .control-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 5px; }
-    .control-top label { font-size: .82rem; color: var(--ink); font-weight: 650; }
-    .control-value { color: var(--navy); font-size: .8rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    input[type="range"] { width: 100%; accent-color: var(--green); cursor: pointer; display: block; }
-    .range-limits { display: flex; justify-content: space-between; color: #8a9aa2; font-size: .65rem; margin-top: 1px; }
-    .select-input {
-      width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; color: var(--ink); background: #fff;
-      font-size: .82rem;
-    }
-    .sub-note { padding: 10px 11px; border: 1px solid #dcebe3; background: #f4faf6; color: #456455; border-radius: 9px; font-size: .75rem; margin-top: 3px; }
-    .controller-controls.disabled { opacity: .42; pointer-events: none; }
-    .derived-line { color: var(--muted); font-size: .72rem; margin-top: 4px; }
-
-    .equation-panel { margin-top: 15px; }
-    .equation-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .equation {
-      border: 1px solid #e9eff1; background: #fbfdfd; border-radius: 10px; padding: 11px 12px;
-    }
-    .equation strong { display: block; color: var(--navy); font-size: .84rem; margin-bottom: 5px; }
-    .equation code { color: var(--green-dark); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; white-space: normal; }
-    .equation small { display: block; color: var(--muted); margin-top: 5px; font-size: .69rem; }
-    .assumptions { margin: 12px 0 0; color: var(--muted); font-size: .75rem; padding-left: 18px; }
-    .assumptions li { margin: 4px 0; }
-
-    .exercise { margin-top: 15px; }
-    .exercise-body { display: grid; grid-template-columns: 1.2fr .8fr; gap: 18px; }
-    .exercise ol { margin: 0; padding-left: 19px; color: var(--ink); font-size: .82rem; }
-    .exercise li { margin: 0 0 8px; padding-left: 3px; }
-    .challenge { padding: 12px; border-radius: 10px; background: var(--amber-pale); color: #745018; font-size: .78rem; }
-    .challenge strong { display: block; margin-bottom: 5px; }
-
-    .footer { padding: 17px 16px 25px; color: #80909a; text-align: center; font-size: .72rem; }
-    .footer a { color: var(--green-dark); text-decoration: none; }
-
-    @media (max-width: 850px) {
-      .main-grid { grid-template-columns: 1fr; }
-      .tank-svg { height: 245px; }
-      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    @media (max-width: 600px) {
-      main { padding: 14px 10px 25px; }
-      .topbar { padding: 17px 14px 20px; }
-      .intro { display: block; }
-      .live-badge { display: inline-block; margin-top: 10px; }
-      .toolbar { align-items: stretch; }
-      .mode-group, .action-group { width: 100%; }
-      .action-btn { flex: 1; padding: 9px 7px; }
-      .controls-grid, .charts-grid, .equation-list, .exercise-body { grid-template-columns: 1fr; }
-      .metrics { gap: 7px; }
-      .metric { padding: 10px; }
-      canvas { height: 205px; }
-      .tank-readouts { gap: 5px; padding-left: 9px; padding-right: 9px; }
-      .mini-stat { padding: 8px 6px; }
-      .mini-stat .label { font-size: .64rem; }
-      .mini-stat strong { font-size: .84rem; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#173346">
+<meta name="description" content="Interactive open-loop surge tank dynamics, equilibrium, stability, gain and time constant simulator for chemical engineering students.">
+<title>Surge Tank Dynamics Lab</title>
+<style>
+:root{
+  --navy:#173346;--navy2:#244b60;--green:#16815f;--green2:#35a982;--blue:#3279b7;
+  --amber:#b7791f;--red:#b94e4e;--ink:#24343d;--muted:#657984;--line:#dce6e9;
+  --bg:#f3f7f8;--paper:#fff;--pale:#edf6f1;--bluep:#eef5fa;--shadow:0 8px 24px rgba(23,51,70,.06)
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.48 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+button,input{font:inherit}
+button{cursor:pointer}
+.top{background:linear-gradient(115deg,var(--navy),#1b4b5b 68%,#1c6c56);color:#fff;padding:23px 18px}
+.wrap,main,.foot{max-width:1220px;margin:auto}
+.brand{display:flex;align-items:center;gap:13px}.logo{width:46px;height:46px;border:1px solid #ffffff40;background:#ffffff18;border-radius:13px;display:grid;place-items:center;font-size:25px}
+h1{font-size:clamp(1.35rem,3vw,1.9rem);margin:0;letter-spacing:-.035em}.top p{color:#d5e5e8;margin:3px 0 0;font-size:.9rem}
+.pills{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}.pill{border:1px solid #ffffff40;background:#ffffff12;color:#eaf4f3;padding:5px 9px;border-radius:30px;font-size:.72rem}
+main{padding:19px 15px 36px}.intro{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:14px}.intro h2{font-size:1.1rem;color:var(--navy);margin:0 0 4px}.intro p{font-size:.86rem;color:var(--muted);margin:0;max-width:880px}
+.badge{display:inline-flex;align-items:center;gap:7px;background:#eaf5ef;color:#176b4b;border:1px solid #cce5d7;padding:6px 10px;border-radius:30px;font-size:.74rem;font-weight:800;white-space:nowrap}.badge.warn{background:#fff6e8;color:#925c12;border-color:#eed8ae}
+.toolbar,.panel,.metric{background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;margin-bottom:10px}.toolbar small{color:var(--muted);font-size:.8rem}.actions{display:flex;gap:7px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:9px;padding:9px 13px;font-size:.82rem;font-weight:750}.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}.btn:disabled{opacity:.45;cursor:not-allowed}.statusline{display:flex;align-items:center;gap:8px;min-height:28px;color:var(--muted);font-size:.77rem;margin:0 2px 10px}.dot{width:8px;height:8px;border-radius:50%;background:#9aaab1}.dot.run{background:#1da46f;box-shadow:0 0 0 4px #dff3e9}
+.layout{display:grid;grid-template-columns:minmax(280px,.82fr) minmax(0,1.7fr);gap:14px;align-items:start}.panel{overflow:hidden;min-width:0}.head{padding:13px 15px 10px;border-bottom:1px solid #edf1f3}.head h3{margin:0;color:var(--navy);font-size:.96rem}.head p{margin:3px 0 0;color:var(--muted);font-size:.75rem}.body{padding:14px 15px 16px}
+.tankarea{padding:8px 8px 0;background:linear-gradient(180deg,#f7fbfc,#fff)}.tank-svg{display:block;width:100%;height:285px;max-width:390px;margin:auto}.tankstats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:9px 11px}.mini{border:1px solid #e7eef0;border-radius:9px;padding:8px;background:#fbfdfd;min-width:0}.mini span{display:block;font-size:.65rem;color:var(--muted)}.mini strong{display:block;font-size:.9rem;color:var(--navy);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.tanknote{margin:0 11px 13px;padding:9px 10px;background:var(--bluep);color:#385c72;border-radius:9px;font-size:.72rem}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-bottom:13px}.metric{padding:10px 11px;min-width:0}.mlabel{display:block;font-size:.68rem;color:var(--muted);margin-bottom:4px}.mvalue{font-size:clamp(1rem,2.1vw,1.25rem);font-weight:850;color:var(--navy);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.munit{font-size:.66rem;color:var(--muted);font-weight:500;margin-left:3px}.sub{font-size:.65rem;color:var(--muted);margin-top:3px}
+.chartbox{padding:8px 9px 10px}canvas{display:block;width:100%;height:250px}.legend{display:flex;gap:12px;flex-wrap:wrap;padding:0 13px 12px;color:var(--muted);font-size:.68rem}.leg{display:inline-flex;align-items:center;gap:6px}.swatch{display:inline-block;width:18px;height:3px;border-radius:4px}.dash{height:0;border-top:2px dashed var(--amber)}.charts{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:13px}
+.controls{margin-top:14px}.controlgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px 26px}.section h4{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--green);margin:0 0 12px}.field{margin-bottom:14px}.fieldtop{display:flex;align-items:baseline;justify-content:space-between;gap:9px;margin-bottom:5px}.field label{font-size:.79rem;font-weight:700}.readout{font-size:.77rem;font-weight:800;color:var(--navy);white-space:nowrap;font-variant-numeric:tabular-nums}.rangeLine{display:grid;grid-template-columns:minmax(0,1fr) 82px;gap:10px;align-items:center}.rangeLine input[type=range]{width:100%;accent-color:var(--green)}.rangeLine input[type=number]{width:100%;border:1px solid var(--line);border-radius:7px;padding:5px 6px;color:var(--navy);font-size:.76rem;font-variant-numeric:tabular-nums}.ends{display:flex;justify-content:space-between;color:#8b9aa2;font-size:.62rem}.callout{background:#f1f8f4;border:1px solid #d8eadf;border-radius:10px;padding:10px 11px;color:#456456;font-size:.73rem}.derivedgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.derived{border:1px solid #e7eef0;border-radius:9px;padding:9px;background:#fbfdfd}.dlabel{font-size:.65rem;color:var(--muted)}.dval{font-size:.92rem;font-weight:850;color:var(--navy);margin-top:2px;font-variant-numeric:tabular-nums}.derived small{display:block;font-size:.62rem;color:var(--muted);margin-top:2px}
+.stability{padding:11px 12px;border:1px solid #d2e9dc;background:#eef7f2;border-radius:10px;margin-bottom:12px}.stability.warn{background:#fff7e9;border-color:#eedcb8}.stability strong{display:block;font-size:.76rem;color:#176b4b}.stability.warn strong{color:#925c12}.stability p{font-size:.72rem;color:#526a5e;margin:4px 0 0}.eqgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.eq{border:1px solid #e7edf0;background:#fbfdfd;border-radius:10px;padding:10px}.eq strong{display:block;font-size:.74rem;color:var(--navy);margin-bottom:5px}.formula{font: .86rem/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;color:#176b4b;overflow-wrap:anywhere}.eq small{display:block;color:var(--muted);font-size:.65rem;margin-top:4px}.compare{width:100%;border-collapse:collapse;font-size:.74rem;margin-top:11px}.compare th,.compare td{text-align:right;padding:8px 7px;border-bottom:1px solid #e9eff1;font-variant-numeric:tabular-nums}.compare th:first-child,.compare td:first-child{text-align:left}.compare thead th{color:var(--muted);font-weight:750;background:#f8fafb}.compare td:first-child{font-weight:700;color:var(--navy)}
+.notegrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.notegrid h4{font-size:.79rem;color:var(--navy);margin:0 0 5px}.notegrid p{font-size:.73rem;color:var(--muted);margin:0 0 7px}.notegrid ul{margin:5px 0 0;padding-left:17px;color:var(--muted);font-size:.72rem}.notegrid li{margin:4px 0}.foot{text-align:center;color:#85949b;font-size:.68rem;padding:8px 15px 25px}
+@media(max-width:920px){.layout{grid-template-columns:1fr}.tank-svg{height:265px}.metrics{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){main{padding:13px 9px 28px}.top{padding:17px 13px}.intro{display:block}.badge{margin-top:9px}.toolbar{align-items:flex-start}.actions{width:100%}.actions .btn{flex:1;padding:9px 7px}.controlgrid,.charts,.eqgrid,.notegrid{grid-template-columns:1fr}.metrics{gap:7px}.metric{padding:9px}.body{padding:12px}.tankstats{gap:5px;padding:8px}.mini{padding:7px 5px}.mini span{font-size:.61rem}.mini strong{font-size:.81rem}canvas{height:220px}.rangeLine{grid-template-columns:minmax(0,1fr) 76px}}
+</style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="topbar-inner">
-      <div class="brand-row">
-        <div class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 32 32" fill="none">
-            <path d="M8 5h16v21H8z" stroke="white" stroke-width="1.8" rx="2"/>
-            <path d="M9 16c3-2 5 2 8 0s5 1 6 0v9H9z" fill="#75d6ae"/>
-            <path d="M5 8h3M24 8h3M5 26h3M24 26h3" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <div>
-          <h1>Surge Tank Lab</h1>
-          <p class="subtitle">Solvent buffer tank · Dynamic response &amp; level control</p>
-        </div>
+<header class="top"><div class="wrap">
+  <div class="brand"><div class="logo" aria-hidden="true">▥</div><div><h1>Surge Tank Dynamics Lab</h1><p>Solvent buffer tank · Open-loop dynamics, equilibrium, stability and first-order response</p></div></div>
+  <div class="pills"><span class="pill">Chemical Engineering</span><span class="pill">Nonlinear tank model</span><span class="pill">No controller · No installation</span></div>
+</div></header>
+<main>
+  <section class="intro"><div><h2>Explore how process parameters change the tank response</h2><p>Adjust the tank and outlet characteristics, apply an inlet-flow step disturbance, and compare the exact nonlinear response with its local first-order approximation. The outlet valve is fixed; gravity drives the discharge.</p></div><span class="badge" id="stabilityBadge">● Stable positive equilibrium</span></section>
+  <section class="toolbar"><small><strong>Model:</strong> A·dh/dt = Fin(t) − Cv·√h &nbsp; | &nbsp; All calculations run in this browser.</small><div class="actions"><button class="btn primary" id="runBtn">▶ Run response</button><button class="btn" id="pauseBtn" disabled>Ⅱ Pause</button><button class="btn" id="resetBtn">↺ Reset</button></div></section>
+  <div class="statusline"><span class="dot" id="statusDot"></span><span id="statusText" aria-live="polite">Ready. The tank begins at the initial steady state; the inlet-flow disturbance occurs at the selected time.</span></div>
+
+  <section class="layout">
+    <article class="panel"><div class="head"><h3>Gravity-drained solvent tank</h3><p>Fixed outlet valve · Actual liquid height from the nonlinear model</p></div>
+      <div class="tankarea">
+        <svg class="tank-svg" viewBox="0 0 360 310" role="img" aria-label="Animated vertical surge tank with top inlet and fixed gravity outlet">
+          <defs><linearGradient id="liquidGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#68cbb4"/><stop offset="1" stop-color="#168b86"/></linearGradient><clipPath id="tankClip"><rect x="91" y="38" width="178" height="234" rx="6"/></clipPath></defs>
+          <path d="M180 5 V34" stroke="#3279b7" stroke-width="5" stroke-linecap="round"/><path d="M171 25 L180 36 L189 25" fill="none" stroke="#3279b7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><text x="180" y="14" fill="#3279b7" font-size="11" text-anchor="middle" font-weight="700">INLET</text>
+          <rect x="91" y="38" width="178" height="234" rx="7" fill="#fff" stroke="#244b60" stroke-width="5"/>
+          <g clip-path="url(#tankClip)"><rect id="liquidRect" x="94" y="178" width="172" height="91" fill="url(#liquidGrad)"/><path id="liquidWave" d="M94 178 Q116 172 138 178 T182 178 T226 178 T266 178" fill="none" stroke="#d1fff2" stroke-width="2" opacity=".9"/></g>
+          <path d="M80 272 H280" stroke="#244b60" stroke-width="5" stroke-linecap="round"/><path d="M269 238 H309 V260 H333" stroke="#168b86" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M324 251 L335 260 L324 269" stroke="#168b86" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M298 249 L308 259 L298 269 M318 249 L308 259 L318 269" stroke="#244b60" stroke-width="2" fill="none"/><text x="315" y="234" fill="#168b86" font-size="10" text-anchor="middle" font-weight="700">FIXED</text>
+          <g fill="#6c7d86" font-size="10" text-anchor="end"><text x="78" y="43">Hmax</text><text x="78" y="160">h</text><text x="78" y="272">0</text></g><path d="M84 47 V267 M80 47 H88 M80 267 H88" stroke="#9aabb3" stroke-width="1.2"/>
+          <path id="levelMark" d="M82 178 H278" stroke="#b7791f" stroke-width="1.5" stroke-dasharray="4 4"/><text id="levelText" x="180" y="297" fill="#173346" font-size="12" text-anchor="middle" font-weight="800">Liquid level: 4.00 m</text>
+        </svg>
       </div>
-      <div class="top-meta">
-        <span class="top-pill">Chemical Engineering</span>
-        <span class="top-pill">Interactive process simulation</span>
-        <span class="top-pill">Runs in your browser · No sign-in</span>
-      </div>
+      <div class="tankstats"><div class="mini"><span>Current level</span><strong id="tankLevel">4.00 m</strong></div><div class="mini"><span>Liquid volume</span><strong id="tankVolume">40.0 m³</strong></div><div class="mini"><span>Tank height used</span><strong id="tankPercent">40.0%</strong></div></div>
+      <p class="tanknote" id="tankNote">The inlet-flow step changes the equilibrium level. A stable mathematical equilibrium may still be above the physical tank capacity.</p>
+    </article>
+
+    <div>
+      <section class="metrics">
+        <div class="metric"><span class="mlabel">Initial equilibrium, h₀</span><div class="mvalue" id="h0Metric">4.000<span class="munit">m</span></div><div class="sub">Before the disturbance</div></div>
+        <div class="metric"><span class="mlabel">New equilibrium, h₁</span><div class="mvalue" id="h1Metric">7.563<span class="munit">m</span></div><div class="sub">After the disturbance</div></div>
+        <div class="metric"><span class="mlabel">Initial time constant, τ₀</span><div class="mvalue" id="tauMetric">10.00<span class="munit">min</span></div><div class="sub">At initial operating point</div></div>
+        <div class="metric"><span class="mlabel">Initial process gain, Kₚ,₀</span><div class="mvalue" id="gainMetric">1.000<span class="munit">min/m²</span></div><div class="sub">Local steady-state sensitivity</div></div>
+      </section>
+      <section class="panel"><div class="head"><h3>Liquid level versus time</h3><p>Exact nonlinear response compared with the local linearized approximation</p></div><div class="chartbox"><canvas id="levelChart" aria-label="Graph of actual and linearized liquid level versus time"></canvas></div><div class="legend"><span class="leg"><i class="swatch" style="background:#168b68"></i>Nonlinear model</span><span class="leg"><i class="swatch" style="background:#3279b7"></i>Linearized model</span><span class="leg"><i class="swatch dash"></i>New equilibrium</span></div></section>
+      <section class="charts"><div class="panel"><div class="head"><h3>Inlet and outlet flow</h3><p>Outlet flow changes with the liquid head</p></div><div class="chartbox"><canvas id="flowChart" aria-label="Graph of inlet and outlet flow versus time"></canvas></div><div class="legend"><span class="leg"><i class="swatch" style="background:#3279b7"></i>Inlet flow</span><span class="leg"><i class="swatch" style="background:#168b68"></i>Outlet flow</span></div></div>
+        <div class="panel"><div class="head"><h3>Level deviation from initial state</h3><p>Transient change from the initial equilibrium</p></div><div class="chartbox"><canvas id="deviationChart" aria-label="Graph of level deviation versus time"></canvas></div><div class="legend"><span class="leg"><i class="swatch" style="background:#168b68"></i>Nonlinear deviation</span><span class="leg"><i class="swatch" style="background:#3279b7"></i>Linearized deviation</span></div></div></section>
     </div>
-  </header>
+  </section>
 
-  <main>
-    <div class="intro">
-      <div>
-        <h2>Explore how a surge affects tank level</h2>
-        <p>Change the tank, liquid and operating conditions. Run the same pump surge with a fixed inlet setting (open-loop) or activate PI feedback to let the inlet pump compensate.</p>
-      </div>
-      <span class="live-badge">● Model ready</span>
+  <section class="panel controls"><div class="head"><h3>Interactive process parameters</h3><p>Change an input to recalculate the equilibrium and dynamic characteristics. The initial inlet flow is calculated to make the selected initial level a steady state.</p></div><div class="body"><div class="controlgrid">
+    <div class="section"><h4>Tank and gravity outlet</h4>
+      <div class="field"><div class="fieldtop"><label for="area">Tank cross-sectional area, A</label><span class="readout" id="areaRead">10.0 m²</span></div><div class="rangeLine"><input id="area" type="range" min="2" max="30" step="0.5" value="10"><input id="areaNum" type="number" min="2" max="30" step="0.5" value="10" aria-label="Tank cross-sectional area in square meters"></div><div class="ends"><span>2 m²</span><span>30 m²</span></div></div>
+      <div class="field"><div class="fieldtop"><label for="cv">Outlet coefficient, Cᵥ</label><span class="readout" id="cvRead">4.00 m²·⁵/min</span></div><div class="rangeLine"><input id="cv" type="range" min="1" max="8" step="0.1" value="4"><input id="cvNum" type="number" min="1" max="8" step="0.1" value="4" aria-label="Gravity outlet coefficient"></div><div class="ends"><span>1</span><span>8 m²·⁵/min</span></div></div>
+      <div class="field"><div class="fieldtop"><label for="h0">Initial steady liquid level, h₀</label><span class="readout" id="h0Read">4.00 m</span></div><div class="rangeLine"><input id="h0" type="range" min="0.5" max="8" step="0.1" value="4"><input id="h0Num" type="number" min="0.5" max="8" step="0.1" value="4" aria-label="Initial steady liquid level in meters"></div><div class="ends"><span>0.5 m</span><span>8 m</span></div></div>
+      <div class="field"><div class="fieldtop"><label for="hmax">Tank maximum height, Hmax</label><span class="readout" id="hmaxRead">10.0 m</span></div><div class="rangeLine"><input id="hmax" type="range" min="5" max="16" step="0.5" value="10"><input id="hmaxNum" type="number" min="5" max="16" step="0.5" value="10" aria-label="Maximum tank height in meters"></div><div class="ends"><span>5 m</span><span>16 m</span></div></div>
+      <div class="callout"><strong>Nominal inlet flow (calculated):</strong> <span id="finNominal">8.00 m³/min</span><br>Fᵢₙ,₀ = Cᵥ√h₀, so the tank starts at steady state.</div>
     </div>
-
-    <section class="toolbar" aria-label="Simulation controls">
-      <div class="mode-group">
-        <span class="mode-label">CONTROL MODE</span>
-        <button class="mode-btn active" id="openLoopBtn" type="button" aria-pressed="true">Open-loop</button>
-        <button class="mode-btn" id="closedLoopBtn" type="button" aria-pressed="false">PI feedback</button>
-      </div>
-      <div class="action-group">
-        <button class="action-btn primary" id="runBtn" type="button">▶ Run simulation</button>
-        <button class="action-btn" id="pauseBtn" type="button" disabled>Ⅱ Pause</button>
-        <button class="action-btn" id="resetBtn" type="button">↺ Reset</button>
-      </div>
-    </section>
-
-    <div class="status-line" aria-live="polite">
-      <span class="status-dot" id="statusDot"></span>
-      <span id="statusText">Ready. Select a mode and press Run simulation.</span>
-      <span style="margin-left:auto" id="timeText">Simulation time: 0.00 / 30 min</span>
+    <div class="section"><h4>Disturbance and fluid</h4>
+      <div class="field"><div class="fieldtop"><label for="disturbance">Inlet-flow change, ΔFᵢₙ</label><span class="readout" id="distRead">+3.00 m³/min</span></div><div class="rangeLine"><input id="disturbance" type="range" min="-7.9" max="8" step="0.1" value="3"><input id="disturbanceNum" type="number" min="-7.9" max="8" step="0.1" value="3" aria-label="Inlet flow disturbance in cubic meters per minute"></div><div class="ends"><span id="distMinLabel">−7.9 m³/min</span><span>+8 m³/min</span></div></div>
+      <div class="field"><div class="fieldtop"><label for="stepTime">Disturbance time</label><span class="readout" id="timeRead">1.0 min</span></div><div class="rangeLine"><input id="stepTime" type="range" min="0" max="10" step="0.5" value="1"><input id="stepTimeNum" type="number" min="0" max="10" step="0.5" value="1" aria-label="Disturbance time in minutes"></div><div class="ends"><span>0 min</span><span>10 min</span></div></div>
+      <div class="field"><div class="fieldtop"><label for="duration">Simulation duration</label><span class="readout" id="durationRead">60 min</span></div><div class="rangeLine"><input id="duration" type="range" min="20" max="120" step="5" value="60"><input id="durationNum" type="number" min="20" max="120" step="5" value="60" aria-label="Simulation duration in minutes"></div><div class="ends"><span>20 min</span><span>120 min</span></div></div>
+      <div class="field"><div class="fieldtop"><label for="density">Liquid density, ρ</label><span class="readout" id="densityRead">1000 kg/m³</span></div><div class="rangeLine"><input id="density" type="range" min="650" max="1350" step="10" value="1000"><input id="densityNum" type="number" min="650" max="1350" step="10" value="1000" aria-label="Liquid density in kilograms per cubic meter"></div><div class="ends"><span>650</span><span>1350 kg/m³</span></div></div>
+      <div class="callout"><strong>Density assumption:</strong> Because flows are volumetric and Cᵥ is fixed, density changes hydrostatic pressure but not the level response in this model.</div>
     </div>
+  </div></div></section>
 
-    <section class="metrics" aria-label="Live process measurements">
-      <div class="metric"><span class="metric-label">Liquid level</span><div class="metric-value"><span id="levelMetric">4.00</span><span class="metric-unit">m</span></div></div>
-      <div class="metric"><span class="metric-label">Outlet flow</span><div class="metric-value"><span id="outMetric">8.00</span><span class="metric-unit">m³/min</span></div></div>
-      <div class="metric"><span class="metric-label">Inlet flow</span><div class="metric-value"><span id="inMetric">8.00</span><span class="metric-unit">m³/min</span></div></div>
-      <div class="metric"><span class="metric-label">Bottom gauge pressure</span><div class="metric-value"><span id="pressureMetric">39.24</span><span class="metric-unit">kPa</span></div></div>
-    </section>
+  <section class="panel controls"><div class="head"><h3>Calculated operating points and stability</h3><p>Compare the initial and post-disturbance operating points.</p></div><div class="body">
+    <div class="stability" id="stabilityPanel"><strong id="stabilityTitle">Stable positive equilibrium</strong><p id="stabilityExplain">For positive inlet flow, A and Cᵥ, the local pole is negative. A level rise increases gravity outflow and creates a restoring effect.</p></div>
+    <div class="derivedgrid">
+      <div class="derived"><div class="dlabel">Inlet after disturbance</div><div class="dval" id="finAfter">11.00 m³/min</div><small>Fᵢₙ,₁ = Fᵢₙ,₀ + ΔFᵢₙ</small></div>
+      <div class="derived"><div class="dlabel">Initial slope after step</div><div class="dval" id="initialSlope">0.300 m/min</div><small>ΔFᵢₙ / A at the instant of the step</small></div>
+      <div class="derived"><div class="dlabel">Post-step time constant, τ₁</div><div class="dval" id="tau1">13.75 min</div><small>Local value at the new equilibrium</small></div>
+      <div class="derived"><div class="dlabel">Post-step process gain, Kₚ,₁</div><div class="dval" id="gain1">1.375 min/m²</div><small>Local value at the new equilibrium</small></div>
+      <div class="derived"><div class="dlabel">Initial local pole, λ₀</div><div class="dval" id="pole0">−0.1000 min⁻¹</div><small>λ₀ = −1/τ₀</small></div>
+      <div class="derived"><div class="dlabel">Post-step local pole, λ₁</div><div class="dval" id="pole1">−0.0727 min⁻¹</div><small>λ₁ = −1/τ₁</small></div>
+      <div class="derived"><div class="dlabel">Bottom gauge pressure at h₀</div><div class="dval" id="pressure0">39.24 kPa</div><small>ρgh₀</small></div>
+      <div class="derived"><div class="dlabel">Bottom gauge pressure at h₁</div><div class="dval" id="pressure1">74.17 kPa</div><small>ρgh₁</small></div>
+    </div>
+    <table class="compare"><thead><tr><th>Local characteristic</th><th>Initial point</th><th>After inlet step</th></tr></thead><tbody>
+      <tr><td>Equilibrium height</td><td id="tableH0">4.000 m</td><td id="tableH1">7.563 m</td></tr>
+      <tr><td>Process gain, Kₚ</td><td id="tableK0">1.000 min/m²</td><td id="tableK1">1.375 min/m²</td></tr>
+      <tr><td>Time constant, τ</td><td id="tableT0">10.00 min</td><td id="tableT1">13.75 min</td></tr>
+      <tr><td>System pole, λ</td><td id="tableL0">−0.1000 min⁻¹</td><td id="tableL1">−0.0727 min⁻¹</td></tr>
+    </tbody></table>
+  </div></section>
 
-    <section class="main-grid">
-      <article class="panel">
-        <div class="panel-head">
-          <h3>Live tank visualization</h3>
-          <p>Vertical tank · Fixed gravity outlet valve</p>
-        </div>
-        <div class="tank-wrap">
-          <svg class="tank-svg" viewBox="0 0 360 275" role="img" aria-label="Animated vertical surge tank showing liquid level, inlet and outlet">
-            <defs>
-              <clipPath id="tankClip"><rect x="115" y="27" width="128" height="207" rx="8"/></clipPath>
-              <linearGradient id="liquidGradient" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stop-color="#73c9a5"/>
-                <stop offset="100%" stop-color="#218b68"/>
-              </linearGradient>
-              <linearGradient id="tankGlass" x1="0" x2="1"><stop offset="0%" stop-color="#dce8ed"/><stop offset="50%" stop-color="#f8fbfc"/><stop offset="100%" stop-color="#dce8ed"/></linearGradient>
-            </defs>
-            <!-- inlet -->
-            <path d="M178 8V27" stroke="#2776b8" stroke-width="7" stroke-linecap="round"/>
-            <path d="M170 17l8 10 8-10" fill="none" stroke="#2776b8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            <text x="191" y="13" font-size="10" fill="#2776b8" font-weight="700">INLET</text>
-            <path d="M178 0v8" stroke="#2776b8" stroke-width="2" stroke-dasharray="3 3"/>
-            <!-- tank body -->
-            <rect x="111" y="23" width="136" height="215" rx="11" fill="url(#tankGlass)" stroke="#456474" stroke-width="2.2"/>
-            <g clip-path="url(#tankClip)">
-              <rect id="liquidFill" x="115" y="130" width="128" height="104" fill="url(#liquidGradient)"/>
-              <path id="liquidSurface" d="M115 130 Q131 126 147 130 T179 130 T211 130 T243 130" fill="none" stroke="#d0f4e4" stroke-width="2" opacity=".85"/>
-              <path d="M120 38v190" stroke="white" stroke-width="2" opacity=".22"/>
-            </g>
-            <!-- level marks -->
-            <g id="tankTickLines" stroke="#526d7b" stroke-width="1.3">
-              <path d="M247 27h10"/><path d="M247 79h10"/><path d="M247 130h10"/><path d="M247 182h10"/><path d="M247 234h10"/>
-            </g>
-            <g id="tankTickLabels" fill="#607782" font-size="9">
-              <text x="263" y="30">8 m</text><text x="263" y="82">6 m</text><text x="263" y="133">4 m</text><text x="263" y="185">2 m</text><text x="263" y="237">0 m</text>
-            </g>
-            <path id="setpointLine" d="M106 130h147" stroke="#bd7818" stroke-width="2" stroke-dasharray="5 4"/>
-            <text x="20" y="126" fill="#bd7818" font-size="10" font-weight="700">SETPOINT</text>
-            <path d="M76 130h30" stroke="#bd7818" stroke-width="1.5" stroke-dasharray="3 3"/>
-            <!-- outlet -->
-            <path d="M178 238v17h73" stroke="#2776b8" stroke-width="7" stroke-linecap="round" fill="none"/>
-            <path d="M250 247l10 8-10 8" fill="none" stroke="#2776b8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <text x="269" y="260" font-size="10" fill="#2776b8" font-weight="700">OUT</text>
-            <!-- valve symbol -->
-            <path d="M178 245l-8 7 8 7 8-7z" fill="#fff" stroke="#456474" stroke-width="1.5"/>
-            <text x="17" y="258" fill="#647783" font-size="9">Fixed valve</text>
-            <path d="M78 254h86" stroke="#9aaeb8" stroke-width="1"/>
-            <text id="tankLevelLabel" x="179" y="143" text-anchor="middle" fill="#fff" font-size="16" font-weight="800">4.00 m</text>
-            <text id="tankPercentLabel" x="179" y="160" text-anchor="middle" fill="#e9fff5" font-size="10" font-weight="650">50% full</text>
-          </svg>
-        </div>
-        <div class="tank-readouts">
-          <div class="mini-stat"><span class="label">Tank volume</span><strong id="volumeReadout">40.0 m³</strong></div>
-          <div class="mini-stat"><span class="label">Tank diameter*</span><strong id="diameterReadout">3.57 m</strong></div>
-          <div class="mini-stat"><span class="label">Fluid density</span><strong id="densityReadout">1000 kg/m³</strong></div>
-        </div>
-        <p class="tank-note">*Equivalent diameter for a vertical cylindrical tank. The tank cross-sectional area is the model input.</p>
-      </article>
+  <section class="panel controls"><div class="head"><h3>Mathematical model and interpretation</h3><p>Each calculated quantity comes from the equations below.</p></div><div class="body">
+    <div class="eqgrid">
+      <div class="eq"><strong>1 · Nonlinear dynamic mass balance</strong><div class="formula">A·dh/dt = Fᵢₙ(t) − Cᵥ√h</div><small>The exact nonlinear model used for the simulated tank level.</small></div>
+      <div class="eq"><strong>2 · Steady-state level</strong><div class="formula">h* = (Fᵢₙ/Cᵥ)²</div><small>At equilibrium, inlet flow equals gravity outlet flow.</small></div>
+      <div class="eq"><strong>3 · Local first-order model</strong><div class="formula">ΔH(s)/ΔFᵢₙ(s) = Kₚ/(τs + 1)</div><small>A small-signal approximation around one positive steady operating point.</small></div>
+      <div class="eq"><strong>4 · Process gain and time constant</strong><div class="formula">Kₚ = 2√h*/Cᵥ<br>τ = 2A√h*/Cᵥ</div><small>Kₚ is level sensitivity; τ describes local response speed.</small></div>
+      <div class="eq"><strong>5 · Local stability</strong><div class="formula">λ = −Cᵥ/(2A√h*) = −1/τ</div><small>For A &gt; 0, Cᵥ &gt; 0 and h* &gt; 0, λ is negative and the equilibrium is locally asymptotically stable.</small></div>
+      <div class="eq"><strong>6 · Hydrostatic gauge pressure</strong><div class="formula">Pbottom − Ptop = ρgh</div><small>Density affects pressure; it does not enter this volumetric-flow level balance.</small></div>
+    </div>
+  </div></section>
 
-      <div>
-        <div class="charts-grid" style="margin-top:0">
-          <article class="panel chart-panel">
-            <div class="panel-head"><h3>Liquid level response</h3><p>Actual level and level setpoint vs. time</p></div>
-            <div class="chart-wrap"><canvas id="levelChart" aria-label="Liquid level chart"></canvas></div>
-            <div class="legend"><span class="legend-item"><i class="legend-line" style="background:#17825d"></i>Tank level</span><span class="legend-item"><i class="legend-line legend-dash"></i>Setpoint</span></div>
-          </article>
-          <article class="panel chart-panel">
-            <div class="panel-head"><h3>Flow-rate response</h3><p>Inlet and gravity outlet flows vs. time</p></div>
-            <div class="chart-wrap"><canvas id="flowChart" aria-label="Inlet and outlet flow chart"></canvas></div>
-            <div class="legend"><span class="legend-item"><i class="legend-line" style="background:#2776b8"></i>Inlet flow</span><span class="legend-item"><i class="legend-line" style="background:#bd7818"></i>Outlet flow</span></div>
-          </article>
-        </div>
-        <article class="panel" style="margin-top:15px">
-          <div class="panel-head"><h3>Controller / pump response</h3><p>Change in inlet pump flow commanded by the PI controller</p></div>
-          <div class="chart-wrap"><canvas id="controllerChart" aria-label="Controller pump correction chart"></canvas></div>
-          <div class="legend"><span class="legend-item"><i class="legend-line" style="background:#7657ad"></i>Pump correction (positive or negative)</span></div>
-        </article>
-      </div>
-    </section>
+  <section class="panel controls"><div class="head"><h3>How to read the results</h3><p>Short explanations of the main process-dynamics concepts.</p></div><div class="body notegrid">
+    <div><h4>Stability is not the same as speed</h4><p>For a positive fixed inlet flow, the tank has a positive stable equilibrium. Below equilibrium, inlet flow exceeds outlet flow and the level rises. Above equilibrium, outlet flow exceeds inlet flow and the level falls.</p><p>A stable system can respond slowly or quickly. The time constant describes local response speed; the sign of the pole determines local stability.</p></div>
+    <div><h4>Why gain and time constant change differently</h4><p>Tank area changes τ but does not change the equilibrium height or the static process gain for a fixed inlet flow and outlet coefficient. Changing Cᵥ or the operating level changes both gain and time constant.</p><p>The linearized curve is a local approximation. Large disturbances move the system far from its original operating point, so the nonlinear and linear curves may differ.</p></div>
+    <div><h4>Equilibrium versus tank capacity</h4><p>A mathematically stable equilibrium can lie above the physical tank height. In that case, the ideal model predicts a stable level, but a real tank would overflow first. Stability does not mean that the operating condition is safe.</p></div>
+    <div><h4>What density changes in this model</h4><p>With volumetric inlet and outlet flows and a fixed outlet coefficient, changing density changes the hydrostatic pressure at a given height. It does not change the predicted level trajectory. A model including viscosity or density-dependent discharge behavior would require additional hydraulic relationships.</p></div>
+  </div></section>
+</main>
+<footer class="foot">Educational model · Vertical tank · Constant cross-sectional area · Incompressible liquid · Fixed gravity outlet · No feedback controller</footer>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const gravity = 9.81;
+  const dt = 0.04; // integration step in minutes
+  const defaultValues = {area:10, cv:4, h0:4, hmax:10, disturbance:3, stepTime:1, duration:60, density:1000};
+  const fields = {
+    area:{min:2,max:30,step:0.5,digits:1,unit:'m²'},
+    cv:{min:1,max:8,step:0.1,digits:2,unit:'m²·⁵/min'},
+    h0:{min:0.5,max:8,step:0.1,digits:2,unit:'m'},
+    hmax:{min:5,max:16,step:0.5,digits:1,unit:'m'},
+    disturbance:{min:-7.9,max:8,step:0.1,digits:2,unit:'m³/min'},
+    stepTime:{min:0,max:10,step:0.5,digits:1,unit:'min'},
+    duration:{min:20,max:120,step:5,digits:0,unit:'min'},
+    density:{min:650,max:1350,step:10,digits:0,unit:'kg/m³'}
+  };
+  let values = {...defaultValues};
+  let results = null;
+  let timer = null;
+  let frame = 0;
+  let playing = false;
+  let revealed = 0;
+  let currentTime = 0;
 
-    <section class="panel controls-panel">
-      <div class="panel-head">
-        <h3>Simulation inputs</h3>
-        <p>Change a parameter, then press Run simulation to calculate a new response.</p>
-      </div>
-      <div class="panel-body">
-        <div class="controls-grid">
-          <div class="control-section">
-            <h4>1 · Tank &amp; liquid</h4>
-            <div class="control-row">
-              <div class="control-top"><label for="area">Tank area, A</label><span class="control-value" id="areaVal">10.0 m²</span></div>
-              <input id="area" type="range" min="2" max="25" step="0.5" value="10" />
-              <div class="range-limits"><span>2 m²</span><span>25 m²</span></div>
-              <div class="derived-line" id="areaDerived">Equivalent cylindrical diameter: 3.57 m</div>
-            </div>
-            <div class="control-row">
-              <div class="control-top"><label for="tankHeight">Tank height</label><span class="control-value" id="tankHeightVal">8.0 m</span></div>
-              <input id="tankHeight" type="range" min="5" max="12" step="0.5" value="8" />
-              <div class="range-limits"><span>5 m</span><span>12 m</span></div>
-            </div>
-            <div class="control-row">
-              <div class="control-top"><label for="density">Liquid density, ρ</label><span class="control-value" id="densityVal">1000 kg/m³</span></div>
-              <input id="density" type="range" min="700" max="1300" step="10" value="1000" />
-              <div class="range-limits"><span>700 kg/m³</span><span>1300 kg/m³</span></div>
-              <div class="derived-line">Density affects hydrostatic pressure; see the model note below.</div>
-            </div>
-            <div class="control-row">
-              <div class="control-top"><label for="initialLevel">Initial liquid level</label><span class="control-value" id="initialLevelVal">4.0 m</span></div>
-              <input id="initialLevel" type="range" min="0.5" max="10" step="0.1" value="4" />
-              <div class="range-limits"><span>0.5 m</span><span>10 m</span></div>
-            </div>
-          </div>
+  const fmt = (x,d=2) => Number.isFinite(x) ? x.toFixed(d) : '—';
+  const signed = (x,d=2) => (x>=0?'+':'−')+fmt(Math.abs(x),d);
+  const outflow = (h,Cv) => Cv*Math.sqrt(Math.max(0,h));
+  const flow0 = () => values.cv*Math.sqrt(values.h0);
+  const flow1 = () => flow0()+values.disturbance;
 
-          <div class="control-section">
-            <h4>2 · Inlet &amp; outlet</h4>
-            <div class="control-row">
-              <div class="control-top"><label for="cv">Valve constant, Cᵥ</label><span class="control-value" id="cvVal">4.00 m²·⁵/min</span></div>
-              <input id="cv" type="range" min="1" max="8" step="0.1" value="4" />
-              <div class="range-limits"><span>1</span><span>8</span></div>
-            </div>
-            <div class="control-row">
-              <div class="control-top"><label for="baseFlow">Nominal inlet flow</label><span class="control-value" id="baseFlowVal">8.0 m³/min</span></div>
-              <input id="baseFlow" type="range" min="0" max="15" step="0.1" value="8" />
-              <div class="range-limits"><span>0</span><span>15 m³/min</span></div>
-            </div>
-            <div class="control-row">
-              <div class="control-top"><label for="surge">Pump surge, ΔFᵢₙ</label><span class="control-value" id="surgeVal">+3.0 m³/min</span></div>
-              <input id="surge" type="range" min="0" max="8" step="0.1" value="3" />
-              <div class="range-limits"><span>0</span><span>+8 m³/min</span></div>
-            </div>
-            <div class="sub-note" id="balanceNote">At h = 4 m, the fixed outlet flow is 8.00 m³/min. This balances the nominal 8.00 m³/min inlet.</div>
-          </div>
-
-          <div class="control-section controller-controls" id="controllerControls">
-            <h4>3 · PI level controller</h4>
-            <div class="control-row">
-              <div class="control-top"><label for="setpoint">Level setpoint</label><span class="control-value" id="setpointVal">4.0 m</span></div>
-              <input id="setpoint" type="range" min="0.5" max="8" step="0.1" value="4" />
-              <div class="range-limits"><span>0.5 m</span><span>8 m</span></div>
-            </div>
-            <div class="control-row">
-              <div class="control-top"><label for="kp">Proportional gain, Kp</label><span class="control-value" id="kpVal">8.0</span></div>
-              <input id="kp" type="range" min="0" max="20" step="0.5" value="8" />
-              <div class="range-limits"><span>0</span><span>20</span></div>
-            </div>
-            <div class="control-row">
-              <div class="control-top"><label for="ti">Integral time, Ti</label><span class="control-value" id="tiVal">4.0 min</span></div>
-              <input id="ti" type="range" min="0.5" max="15" step="0.5" value="4" />
-              <div class="range-limits"><span>0.5 min</span><span>15 min</span></div>
-              <div class="derived-line" id="kiDerived">Integral gain Ki = Kp / Ti = 2.00</div>
-            </div>
-            <div class="sub-note">The PI controller adjusts the inlet pump flow. The bottom gravity outlet valve stays fixed, as in the supplied example.</div>
-          </div>
-
-          <div class="control-section">
-            <h4>4 · Model outputs &amp; test</h4>
-            <div class="control-row">
-              <div class="control-top"><label>Predicted open-loop equilibrium</label><span class="control-value" id="equilibriumVal">7.56 m</span></div>
-              <div class="derived-line">Calculated from the total inlet flow after the surge and the fixed outlet law.</div>
-            </div>
-            <div class="control-row">
-              <div class="control-top"><label>Simulation duration</label><span class="control-value">30 min</span></div>
-              <div class="derived-line">The simulation calculates 30 minutes of process time and plays the response on screen.</div>
-            </div>
-            <div class="control-row">
-              <label for="fluidPreset" style="display:block;font-size:.82rem;font-weight:650;margin-bottom:6px">Quick fluid preset</label>
-              <select id="fluidPreset" class="select-input">
-                <option value="1000">Water · 1000 kg/m³</option>
-                <option value="850">Light oil · 850 kg/m³</option>
-                <option value="920">Heavy oil · 920 kg/m³</option>
-                <option value="custom">Custom density (use slider)</option>
-              </select>
-            </div>
-            <div class="control-row">
-              <button id="restoreBtn" type="button" class="action-btn" style="width:100%">Restore example values</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel equation-panel">
-      <div class="panel-head">
-        <h3>Model equations</h3>
-        <p>The equations used by the simulator are visible so students can connect the response to the process model.</p>
-      </div>
-      <div class="panel-body">
-        <div class="equation-list">
-          <div class="equation"><strong>Dynamic liquid balance</strong><code>A · dh/dt = Fᵢₙ − Fₒᵤₜ</code><small>Incompressible liquid; constant tank cross-sectional area.</small></div>
-          <div class="equation"><strong>Gravity outlet (Torricelli)</strong><code>Fₒᵤₜ = Cᵥ · √h</code><small>The outlet valve remains at its specified fixed opening in this model.</small></div>
-          <div class="equation"><strong>PI controller</strong><code>Fₚᵤₘₚ correction = Kp·e + Ki·∫e dt</code><small>e = setpoint − measured level; pump flow is limited to 0–20 m³/min.</small></div>
-          <div class="equation"><strong>Bottom gauge pressure</strong><code>P = ρ · g · h</code><small>g = 9.81 m/s²; pressure is reported in kPa gauge.</small></div>
-        </div>
-        <ul class="assumptions">
-          <li>Volumetric flow rates are used throughout; liquid density is constant during each run.</li>
-          <li>The tank is vertical with a constant cross-sectional area. The outlet discharges against atmospheric pressure.</li>
-          <li>In PI mode, the inlet pump is the manipulated variable. A positive pump correction increases inlet flow; a negative correction reduces it.</li>
-          <li>This is an ideal teaching model, not a detailed pump, valve, or mechanical design. The tank can exceed its stated height in the mathematical model; the visualization flags that condition.</li>
-        </ul>
-        <div class="sub-note" style="margin-top:12px"><strong>Why doesn't density change the level response here?</strong> With volumetric inlet and outlet flow rates, density cancels from the incompressible liquid balance. Changing density changes ρgh (bottom pressure), but not dh/dt. Density would affect level dynamics if the specified flow were a mass flow rate (kg/min), because Q = ṁ/ρ.</div>
-      </div>
-    </section>
-
-    <section class="panel exercise">
-      <div class="panel-head"><h3>Student exercise · Pump surge before a chemical reactor</h3><p>Suggested classroom activity using the supplied solvent buffer tank case.</p></div>
-      <div class="panel-body exercise-body">
-        <ol>
-          <li>Run the original case in <strong>Open-loop</strong> mode. Record the maximum level and compare it with the theoretical new steady level.</li>
-          <li>Switch to <strong>PI feedback</strong>. Keep the +3 m³/min surge and setpoint at 4 m. Observe the pump correction and level response.</li>
-          <li>Increase the tank area. Does the level move more slowly or more quickly after the same surge?</li>
-          <li>Change the fluid from water to light oil. Which displayed variable changes, and which response stays the same?</li>
-          <li>Try different Kp and Ti values. Find settings that give a smooth response without excessive oscillation.</li>
-        </ol>
-        <div class="challenge"><strong>Challenge question</strong>Why does the open-loop equilibrium become 7.5625 m after the surge, and why can the PI controller return the level toward 4 m without changing the fixed outlet valve?</div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="footer"><div class="footer-inner">Surge Tank Lab · Undergraduate process-control teaching simulator · All calculations run locally in your browser.</div></footer>
-
-  <script>
-    // ------------------------------------------------------------
-    // SURGE TANK LAB
-    // Single-file teaching simulator. No external libraries needed.
-    // Numerical model: RK4 integration of level and PI integral error.
-    // ------------------------------------------------------------
-    const SIM_TIME = 30;       // minutes of simulated process time
-    const DT = 0.02;           // minutes per integration step
-    const MAX_PUMP_FLOW = 20;  // m3/min; simple pump/actuator limit
-    const G = 9.81;            // m/s2
-
-    const $ = (id) => document.getElementById(id);
-    const ids = ["area", "tankHeight", "density", "initialLevel", "cv", "baseFlow", "surge", "setpoint", "kp", "ti"];
-    let mode = "open";
-    let results = [];
-    let playbackIndex = 0;
-    let playbackTimer = null;
-    let playing = false;
-    let hasRun = false;
-    let settingsChanged = false;
-
-    const defaults = {
-      area: 10, tankHeight: 8, density: 1000, initialLevel: 4,
-      cv: 4, baseFlow: 8, surge: 3, setpoint: 4, kp: 8, ti: 4
-    };
-
-    function value(id) { return Number($(id).value); }
-    function fmt(n, digits = 2) { return Number.isFinite(n) ? n.toFixed(digits) : "—"; }
-    function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
-    function params() {
-      return {
-        A: value("area"), H: value("tankHeight"), rho: value("density"), h0: value("initialLevel"),
-        Cv: value("cv"), Fin0: value("baseFlow"), surge: value("surge"), sp: value("setpoint"),
-        Kp: value("kp"), Ti: value("ti"), Ki: value("kp") / Math.max(value("ti"), 0.001)
-      };
-    }
-
-    function updateLabels() {
-      const p = params();
-      $("areaVal").textContent = `${fmt(p.A,1)} m²`;
-      $("tankHeightVal").textContent = `${fmt(p.H,1)} m`;
-      $("densityVal").textContent = `${Math.round(p.rho)} kg/m³`;
-      $("initialLevelVal").textContent = `${fmt(p.h0,1)} m`;
-      $("cvVal").textContent = `${fmt(p.Cv,2)} m²·⁵/min`;
-      $("baseFlowVal").textContent = `${fmt(p.Fin0,1)} m³/min`;
-      $("surgeVal").textContent = `${p.surge >= 0 ? "+" : ""}${fmt(p.surge,1)} m³/min`;
-      $("setpointVal").textContent = `${fmt(p.sp,1)} m`;
-      $("kpVal").textContent = fmt(p.Kp,1);
-      $("tiVal").textContent = `${fmt(p.Ti,1)} min`;
-      $("kiDerived").textContent = `Integral gain Ki = Kp / Ti = ${fmt(p.Ki,2)}`;
-      const diameter = Math.sqrt(4 * p.A / Math.PI);
-      $("areaDerived").textContent = `Equivalent cylindrical diameter: ${fmt(diameter,2)} m`;
-      $("diameterReadout").textContent = `${fmt(diameter,2)} m`;
-      $("densityReadout").textContent = `${Math.round(p.rho)} kg/m³`;
-      const outAtInitial = p.Cv * Math.sqrt(Math.max(p.h0, 0));
-      $("balanceNote").textContent = `At h = ${fmt(p.h0,2)} m, the fixed outlet flow is ${fmt(outAtInitial,2)} m³/min. Nominal inlet flow is ${fmt(p.Fin0,2)} m³/min.`;
-      const qAfterSurge = Math.max(0, p.Fin0 + p.surge);
-      const eq = p.Cv > 0 ? Math.pow(qAfterSurge / p.Cv, 2) : Infinity;
-      $("equilibriumVal").textContent = Number.isFinite(eq) ? `${fmt(eq,2)} m` : "—";
-      updateTank(p.h0, p);
-      updateLiveReadouts(p.h0, p.Fin0, p.Cv * Math.sqrt(Math.max(p.h0, 0)), p);
-      drawEmptyCharts(p);
-    }
-
-    function updateTank(h, p) {
-      const top = 27, bottom = 234, tankPixels = bottom - top;
-      const fraction = clamp(h / p.H, 0, 1);
-      const fillHeight = tankPixels * fraction;
-      const y = bottom - fillHeight;
-      // Keep tank scale labels correct when students change the tank height.
-      const tickLines = document.querySelectorAll("#tankTickLines path");
-      const tickLabels = document.querySelectorAll("#tankTickLabels text");
-      [1, 0.75, 0.5, 0.25, 0].forEach((f, i) => {
-        const tickY = bottom - f * tankPixels;
-        tickLines[i].setAttribute("d", `M247 ${tickY.toFixed(1)}h10`);
-        tickLabels[i].setAttribute("y", (tickY + 3).toFixed(1));
-        tickLabels[i].textContent = `${fmt(f * p.H, 1)} m`;
-      });
-      $("liquidFill").setAttribute("y", y.toFixed(2));
-      $("liquidFill").setAttribute("height", Math.max(0, fillHeight).toFixed(2));
-      const waveY = y;
-      $("liquidSurface").setAttribute("d", `M115 ${waveY} Q131 ${waveY-4} 147 ${waveY} T179 ${waveY} T211 ${waveY} T243 ${waveY}`);
-      const labelY = clamp(y + 16, 43, 218);
-      $("tankLevelLabel").setAttribute("y", labelY);
-      $("tankPercentLabel").setAttribute("y", Math.min(labelY + 17, 231));
-      $("tankLevelLabel").textContent = `${fmt(h,2)} m`;
-      $("tankPercentLabel").textContent = `${Math.round(100*h/p.H)}% full`;
-      const spY = bottom - (p.sp / p.H) * tankPixels;
-      $("setpointLine").setAttribute("d", `M106 ${spY.toFixed(2)}h147`);
-      $("setpointLine").style.opacity = p.sp <= p.H ? "1" : ".2";
-      const fill = $("liquidFill");
-      fill.setAttribute("fill", h > p.H ? "#bd4545" : (h > 0.85*p.H ? "#d39a37" : "url(#liquidGradient)"));
-      $("volumeReadout").textContent = `${fmt(p.A * Math.max(h,0),1)} m³`;
-    }
-
-    function updateLiveReadouts(h, fin, fout, p) {
-      $("levelMetric").textContent = fmt(h,2);
-      $("outMetric").textContent = fmt(fout,2);
-      $("inMetric").textContent = fmt(fin,2);
-      $("pressureMetric").textContent = fmt(p.rho * G * Math.max(h,0) / 1000,2);
-    }
-
-    // PI controller is on the inlet pump. Output is an additive flow correction.
-    // Anti-windup: freeze integration when the pump is saturated and error pushes farther into saturation.
-    function evaluate(h, integral, p, activeMode) {
-      const error = p.sp - h;
-      const disturbance = p.surge; // step disturbance applied at t = 0
-      let correction = 0;
-      let fin;
-      let dIntegral = 0;
-      if (activeMode === "closed") {
-        const rawCorrection = p.Kp * error + p.Ki * integral;
-        const rawFin = p.Fin0 + disturbance + rawCorrection;
-        fin = clamp(rawFin, 0, MAX_PUMP_FLOW);
-        correction = fin - (p.Fin0 + disturbance);
-        const atUpper = rawFin > MAX_PUMP_FLOW;
-        const atLower = rawFin < 0;
-        if ((!atUpper && !atLower) || (atUpper && error < 0) || (atLower && error > 0)) {
-          dIntegral = error;
-        }
-      } else {
-        fin = Math.max(0, p.Fin0 + disturbance);
-      }
-      const fout = p.Cv * Math.sqrt(Math.max(h, 0));
-      const dh = (fin - fout) / p.A;
-      return { dh, dIntegral, fin, fout, correction, error };
-    }
-
-    function rk4Step(h, integral, p, activeMode, dt) {
-      const k1 = evaluate(h, integral, p, activeMode);
-      const k2 = evaluate(h + 0.5*dt*k1.dh, integral + 0.5*dt*k1.dIntegral, p, activeMode);
-      const k3 = evaluate(h + 0.5*dt*k2.dh, integral + 0.5*dt*k2.dIntegral, p, activeMode);
-      const k4 = evaluate(h + dt*k3.dh, integral + dt*k3.dIntegral, p, activeMode);
-      const nextH = Math.max(0, h + (dt/6)*(k1.dh + 2*k2.dh + 2*k3.dh + k4.dh));
-      const nextI = integral + (dt/6)*(k1.dIntegral + 2*k2.dIntegral + 2*k3.dIntegral + k4.dIntegral);
-      return { h: nextH, integral: nextI };
-    }
-
-    function calculateSimulation() {
-      const p = params();
-      const activeMode = mode;
-      const n = Math.ceil(SIM_TIME / DT);
-      let h = p.h0;
-      let integral = 0;
-      const data = [];
-      for (let i = 0; i <= n; i++) {
-        const t = i * DT;
-        const s = evaluate(h, integral, p, activeMode);
-        data.push({ t, h, fin: s.fin, fout: s.fout, correction: s.correction });
-        if (i < n) {
-          const next = rk4Step(h, integral, p, activeMode, DT);
-          h = next.h;
-          integral = next.integral;
-        }
-      }
-      return data;
-    }
-
-    function startSimulation() {
-      stopPlayback();
-      results = calculateSimulation();
-      playbackIndex = 0;
-      hasRun = true;
-      settingsChanged = false;
-      $("runBtn").disabled = true;
-      $("pauseBtn").disabled = false;
-      $("statusDot").className = "status-dot running";
-      $("statusText").textContent = mode === "open"
-        ? "Running open-loop response: the inlet pump surge is applied; the outlet valve stays fixed."
-        : "Running PI feedback: the controller is adjusting the inlet pump to reject the surge.";
-      drawAllCharts(0);
-      showFrame(0);
-      playing = true;
-      // Advance 5 numerical points every 30 ms: a 30-minute run plays in about 9 seconds.
-      playbackTimer = setInterval(() => {
-        if (!playing) return;
-        playbackIndex = Math.min(playbackIndex + 5, results.length - 1);
-        showFrame(playbackIndex);
-        if (playbackIndex >= results.length - 1) finishPlayback();
-      }, 30);
-    }
-
-    function showFrame(index) {
-      if (!results.length) return;
-      const d = results[index];
-      const p = params();
-      updateTank(d.h, p);
-      updateLiveReadouts(d.h, d.fin, d.fout, p);
-      $("timeText").textContent = `Simulation time: ${fmt(d.t,2)} / ${SIM_TIME} min`;
-      drawAllCharts(index);
-      const warning = d.h > p.H ? " Tank has exceeded its specified height." : (d.h > 0.85*p.H ? " High-level region." : "");
-      if (warning) {
-        $("statusDot").className = "status-dot warning";
-        $("statusText").textContent = (mode === "open" ? "Open-loop simulation." : "PI feedback simulation.") + warning;
+  function readField(name) {
+    const meta=fields[name];
+    const n=Number($(name+'Num').value);
+    if(!Number.isFinite(n)) return values[name];
+    return Math.min(meta.max,Math.max(meta.min,n));
+  }
+  function setField(name,n) {
+    const meta=fields[name];
+    const v=Math.min(meta.max,Math.max(meta.min,n));
+    values[name]=v;
+    $(name).value=String(v);
+    $(name+'Num').value=String(v);
+  }
+  function syncDisturbanceBounds() {
+    const f0=flow0();
+    const minD=Math.max(fields.disturbance.min,-f0+0.1);
+    $('disturbance').min=String(minD);
+    $('disturbanceNum').min=String(minD);
+    $('distMinLabel').textContent='−'+fmt(Math.abs(minD),1)+' m³/min';
+    if(values.disturbance<minD) setField('disturbance',minD);
+  }
+  function updateReadouts() {
+    $('areaRead').textContent=fmt(values.area,1)+' m²';
+    $('cvRead').textContent=fmt(values.cv,2)+' m²·⁵/min';
+    $('h0Read').textContent=fmt(values.h0,2)+' m';
+    $('hmaxRead').textContent=fmt(values.hmax,1)+' m';
+    $('distRead').textContent=signed(values.disturbance,2)+' m³/min';
+    $('timeRead').textContent=fmt(values.stepTime,1)+' min';
+    $('durationRead').textContent=fmt(values.duration,0)+' min';
+    $('densityRead').textContent=fmt(values.density,0)+' kg/m³';
+    $('finNominal').textContent=fmt(flow0(),2)+' m³/min';
+  }
+  function operatingPoint(Fin,A,Cv) {
+    const h=(Fin/Cv)**2;
+    const rootH=Math.sqrt(h);
+    const K=2*rootH/Cv;
+    const tau=2*A*rootH/Cv;
+    return {Fin,h,K,tau,lambda:-1/tau};
+  }
+  function derivative(h,Fin,q) { return (Fin-q.Cv*Math.sqrt(Math.max(0,h)))/q.A; }
+  function rk4Step(h,t0,t1,Fin,q) {
+    const step=t1-t0;
+    const k1=derivative(h,Fin,q);
+    const k2=derivative(Math.max(0,h+step*k1/2),Fin,q);
+    const k3=derivative(Math.max(0,h+step*k2/2),Fin,q);
+    const k4=derivative(Math.max(0,h+step*k3),Fin,q);
+    return Math.max(0,h+step*(k1+2*k2+2*k3+k4)/6);
+  }
+  function compute() {
+    const q={A:values.area,Cv:values.cv,h0:values.h0,Hmax:values.hmax,rho:values.density,
+      Fin0:flow0(),dF:values.disturbance,Fin1:flow1(),td:values.stepTime,duration:values.duration};
+    const op0=operatingPoint(q.Fin0,q.A,q.Cv);
+    const op1=operatingPoint(q.Fin1,q.A,q.Cv);
+    const points=[];
+    const totalSteps=Math.ceil(q.duration/dt);
+    for(let i=0;i<=totalSteps;i++) points.push(Math.min(q.duration,i*dt));
+    points.push(q.td);
+    points.sort((a,b)=>a-b);
+    const times=[];
+    for(const t of points){if(!times.length||Math.abs(t-times[times.length-1])>1e-9)times.push(t);}
+    const arr=[];
+    let h=q.h0;
+    for(let i=0;i<times.length;i++){
+      const t=times[i];
+      const after=t>=q.td-1e-10;
+      const Fin=after?q.Fin1:q.Fin0;
+      const elapsed=Math.max(0,t-q.td);
+      const hlin=q.h0+op0.K*q.dF*(1-Math.exp(-elapsed/op0.tau));
+      arr.push({t,h,hlin,Fin,Fout:outflow(h,q.Cv),dev:h-q.h0,linDev:hlin-q.h0});
+      if(i<times.length-1){
+        const next=times[i+1];
+        const midpoint=(t+next)/2;
+        const intervalFin=midpoint<q.td?q.Fin0:q.Fin1;
+        h=rk4Step(h,t,next,intervalFin,q);
       }
     }
-
-    function finishPlayback() {
-      stopPlayback();
-      playbackIndex = results.length - 1;
-      showFrame(playbackIndex);
-      $("runBtn").disabled = false;
-      $("pauseBtn").disabled = true;
-      $("statusDot").className = "status-dot";
-      const p = params();
-      const final = results[results.length - 1];
-      if (mode === "open") {
-        const eq = p.Cv > 0 ? Math.pow(Math.max(0,p.Fin0+p.surge)/p.Cv, 2) : NaN;
-        $("statusText").textContent = `Complete. Final simulated level: ${fmt(final.h,2)} m. The theoretical open-loop equilibrium is ${fmt(eq,2)} m.`;
-      } else {
-        $("statusText").textContent = `Complete. Final simulated level: ${fmt(final.h,2)} m; setpoint: ${fmt(p.sp,2)} m. Check the pump-correction chart.`;
+    results={q,op0,op1,arr};
+  }
+  function updateMetrics() {
+    const {q,op0:o0,op1:o1}=results;
+    $('h0Metric').innerHTML=fmt(o0.h,3)+'<span class="munit">m</span>';
+    $('h1Metric').innerHTML=fmt(o1.h,3)+'<span class="munit">m</span>';
+    $('tauMetric').innerHTML=fmt(o0.tau,2)+'<span class="munit">min</span>';
+    $('gainMetric').innerHTML=fmt(o0.K,3)+'<span class="munit">min/m²</span>';
+    $('finAfter').textContent=fmt(q.Fin1,2)+' m³/min';
+    $('initialSlope').textContent=signed(q.dF/q.A,3)+' m/min';
+    $('tau1').textContent=fmt(o1.tau,2)+' min';
+    $('gain1').textContent=fmt(o1.K,3)+' min/m²';
+    $('pole0').textContent='−'+fmt(1/o0.tau,4)+' min⁻¹';
+    $('pole1').textContent='−'+fmt(1/o1.tau,4)+' min⁻¹';
+    $('pressure0').textContent=fmt(q.rho*gravity*o0.h/1000,2)+' kPa';
+    $('pressure1').textContent=fmt(q.rho*gravity*o1.h/1000,2)+' kPa';
+    $('tableH0').textContent=fmt(o0.h,3)+' m'; $('tableH1').textContent=fmt(o1.h,3)+' m';
+    $('tableK0').textContent=fmt(o0.K,3)+' min/m²'; $('tableK1').textContent=fmt(o1.K,3)+' min/m²';
+    $('tableT0').textContent=fmt(o0.tau,2)+' min'; $('tableT1').textContent=fmt(o1.tau,2)+' min';
+    $('tableL0').textContent='−'+fmt(1/o0.tau,4)+' min⁻¹'; $('tableL1').textContent='−'+fmt(1/o1.tau,4)+' min⁻¹';
+    const safe0=o0.h<=q.Hmax, safe1=o1.h<=q.Hmax;
+    const badge=$('stabilityBadge'), panel=$('stabilityPanel');
+    badge.className='badge'+((!safe0||!safe1)?' warn':'');
+    badge.textContent=(!safe0||!safe1)?'● Stable mathematically · capacity risk':'● Stable positive equilibrium';
+    panel.className='stability'+((!safe0||!safe1)?' warn':'');
+    $('stabilityTitle').textContent='Both positive equilibria are locally asymptotically stable';
+    $('stabilityExplain').textContent='At each positive operating point, the local pole λ is negative. If level rises above equilibrium, gravity outflow exceeds inlet flow and the level moves back down. If level falls below equilibrium, inlet flow exceeds outlet flow and the level rises.';
+    $('tankNote').textContent=(!safe0||!safe1)?'The mathematical equilibrium is stable, but at least one calculated equilibrium is above the stated tank height. A real tank would overflow before reaching that equilibrium.':'Both calculated equilibrium levels are within the specified tank height. The liquid approaches the new equilibrium after the inlet-flow step.';
+  }
+  function resizeCanvas(canvas) {
+    const rect=canvas.getBoundingClientRect();
+    const dpr=Math.max(1,window.devicePixelRatio||1);
+    const w=Math.max(260,rect.width||300),h=Math.max(170,rect.height||230);
+    canvas.width=Math.round(w*dpr); canvas.height=Math.round(h*dpr);
+    const ctx=canvas.getContext('2d');
+    if(!ctx) return null;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {ctx,w,h};
+  }
+  function chart(id,series,opts,upto) {
+    const canvas=$(id), sized=resizeCanvas(canvas); if(!sized)return;
+    const {ctx,w,h}=sized; ctx.clearRect(0,0,w,h);
+    const left=51,right=13,top=14,bottom=31,pw=w-left-right,ph=h-top-bottom;
+    const maxT=results.q.duration;
+    const vals=[];
+    for(const s of series) for(let i=0;i<=upto;i++){const v=s.values[i];if(Number.isFinite(v))vals.push(v);}
+    let ymin=opts.ymin!==undefined?opts.ymin:Math.min(0,...vals);
+    let ymax=opts.ymax!==undefined?opts.ymax:Math.max(1,...vals);
+    if(ymax-ymin<1e-8){ymax+=1;ymin-=1;}
+    if(opts.ymin===undefined){const pad=(ymax-ymin)*.12;ymin-=pad;}
+    if(opts.ymax===undefined){const pad=(ymax-ymin)*.12;ymax+=pad;}
+    const X=t=>left+(t/maxT)*pw;
+    const Y=v=>top+ph-(v-ymin)/(ymax-ymin)*ph;
+    ctx.font='10px system-ui';ctx.lineWidth=1;ctx.strokeStyle='#e6edef';ctx.fillStyle='#71828b';
+    for(let j=0;j<=4;j++){
+      const y=top+ph*j/4,val=ymax-(ymax-ymin)*j/4;
+      ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(left+pw,y);ctx.stroke();
+      ctx.textAlign='right';ctx.fillText(fmt(val,opts.digits??1),left-7,y+3);
+    }
+    for(let j=0;j<=4;j++){
+      const x=left+pw*j/4;ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,top+ph);ctx.stroke();
+      ctx.textAlign='center';ctx.fillText(fmt(maxT*j/4,0),x,top+ph+15);
+    }
+    ctx.fillStyle='#657984';ctx.textAlign='center';ctx.fillText('Time (min)',left+pw/2,h-4);
+    if(opts.target!==undefined&&opts.target>=ymin&&opts.target<=ymax){
+      ctx.save();ctx.setLineDash([5,4]);ctx.strokeStyle='#b7791f';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(left,Y(opts.target));ctx.lineTo(left+pw,Y(opts.target));ctx.stroke();ctx.restore();
+    }
+    const td=results.q.td;ctx.save();ctx.setLineDash([3,4]);ctx.strokeStyle='#b7791f';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(X(td),top);ctx.lineTo(X(td),top+ph);ctx.stroke();ctx.restore();
+    for(const s of series){
+      ctx.beginPath();ctx.strokeStyle=s.color;ctx.lineWidth=s.width||2.2;ctx.lineJoin='round';ctx.lineCap='round';
+      for(let i=0;i<=upto;i++){const x=X(results.arr[i].t),y=Y(s.values[i]);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.stroke();
+    }
+    if(upto>0){const x=X(results.arr[upto].t);ctx.save();ctx.setLineDash([2,4]);ctx.strokeStyle='#83959e';ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,top+ph);ctx.stroke();ctx.restore();}
+  }
+  function drawCharts(upto) {
+    const {q,op1,arr}=results;
+    const levels=arr.map(d=>d.h), linear=arr.map(d=>d.hlin), fin=arr.map(d=>d.Fin), fout=arr.map(d=>d.Fout);
+    const dev=arr.map(d=>d.dev), linDev=arr.map(d=>d.linDev);
+    chart('levelChart',[{color:'#168b68',values:levels},{color:'#3279b7',values:linear}],{ymin:0,ymax:Math.max(q.Hmax*1.04,op1.h*1.12,q.h0*1.12),target:op1.h,digits:1},upto);
+    chart('flowChart',[{color:'#3279b7',values:fin},{color:'#168b68',values:fout}],{ymin:0,ymax:Math.max(q.Fin0,q.Fin1,outflow(Math.max(q.Hmax,op1.h),q.Cv))*1.12,digits:1},upto);
+    const devMin=Math.min(0,...dev.slice(0,upto+1),...linDev.slice(0,upto+1));
+    const devMax=Math.max(0,...dev.slice(0,upto+1),...linDev.slice(0,upto+1));
+    const pad=Math.max(.05,(devMax-devMin)*.12);
+    chart('deviationChart',[{color:'#168b68',values:dev},{color:'#3279b7',values:linDev}],{ymin:devMin-pad,ymax:devMax+pad,digits:1},upto);
+  }
+  function drawTank(record) {
+    const q=results.q;
+    const h=record.h;
+    const clipped=Math.min(q.Hmax,Math.max(0,h));
+    const tankTop=38,tankBottom=272,tankHeight=tankBottom-tankTop;
+    const y=tankBottom-(clipped/q.Hmax)*tankHeight;
+    $('liquidRect').setAttribute('y',String(y));
+    $('liquidRect').setAttribute('height',String(Math.max(0,tankBottom-y)));
+    $('liquidWave').setAttribute('transform',`translate(0 ${y-178})`);
+    $('levelMark').setAttribute('d',`M82 ${y} H278`);
+    $('levelText').textContent='Liquid level: '+fmt(h,2)+' m';
+    $('tankLevel').textContent=fmt(h,2)+' m';
+    $('tankVolume').textContent=fmt(q.A*h,1)+' m³';
+    $('tankPercent').textContent=fmt(100*h/q.Hmax,1)+'%';
+  }
+  function setStatus(text,isRunning=false) {
+    $('statusText').textContent=text;
+    $('statusDot').className='dot'+(isRunning?' run':'');
+  }
+  function stopAnimation() {
+    if(timer!==null){clearInterval(timer);timer=null;}
+    playing=false;$('runBtn').disabled=false;$('pauseBtn').disabled=true;
+  }
+  function buildAndRender(message='Parameters updated. The complete predicted response is shown below.') {
+    stopAnimation();compute();updateReadouts();updateMetrics();
+    frame=0;revealed=results.arr.length-1;currentTime=0;
+    drawTank(results.arr[0]);drawCharts(revealed);
+    setStatus(message,false);
+  }
+  function run() {
+    if(playing)return;
+    if(frame>=results.arr.length-1) frame=0;
+    playing=true;$('runBtn').disabled=true;$('pauseBtn').disabled=false;
+    revealed=frame;drawCharts(revealed);
+    setStatus('Running the nonlinear tank simulation…',true);
+    timer=setInterval(()=>{
+      const total=results.arr.length-1;
+      const advance=Math.max(1,Math.ceil(total/220));
+      frame=Math.min(total,frame+advance);revealed=frame;
+      const record=results.arr[frame];currentTime=record.t;
+      drawTank(record);drawCharts(revealed);
+      if(frame>=total){
+        stopAnimation();
+        const last=results.arr[total];
+        setStatus('Simulation complete. Final simulated level: '+fmt(last.h,3)+' m. New equilibrium: '+fmt(results.op1.h,3)+' m.');
       }
-    }
-
-    function stopPlayback() {
-      if (playbackTimer) clearInterval(playbackTimer);
-      playbackTimer = null;
-      playing = false;
-    }
-
-    function pauseSimulation() {
-      if (!hasRun || !results.length) return;
-      if (playing) {
-        stopPlayback();
-        $("pauseBtn").textContent = "▶ Resume";
-        $("statusDot").className = "status-dot";
-        $("statusText").textContent = "Paused. Resume or reset the simulation.";
-      } else if (playbackIndex < results.length - 1) {
-        playing = true;
-        $("pauseBtn").textContent = "Ⅱ Pause";
-        $("statusDot").className = "status-dot running";
-        $("statusText").textContent = "Simulation resumed.";
-        playbackTimer = setInterval(() => {
-          playbackIndex = Math.min(playbackIndex + 5, results.length - 1);
-          showFrame(playbackIndex);
-          if (playbackIndex >= results.length - 1) finishPlayback();
-        }, 30);
-      }
-    }
-
-    function resetSimulation() {
-      stopPlayback();
-      results = [];
-      playbackIndex = 0;
-      hasRun = false;
-      settingsChanged = false;
-      $("runBtn").disabled = false;
-      $("pauseBtn").disabled = true;
-      $("pauseBtn").textContent = "Ⅱ Pause";
-      $("statusDot").className = "status-dot";
-      $("statusText").textContent = "Ready. Select a mode and press Run simulation.";
-      $("timeText").textContent = `Simulation time: 0.00 / ${SIM_TIME} min`;
-      updateLabels();
-    }
-
-    function drawChart(canvas, data, index, options) {
-      const ctx = canvas.getContext("2d");
-      const rect = canvas.getBoundingClientRect();
-      const dpr = Math.max(1, window.devicePixelRatio || 1);
-      const width = Math.max(260, rect.width);
-      const height = Math.max(180, rect.height);
-      canvas.width = Math.round(width*dpr);
-      canvas.height = Math.round(height*dpr);
-      ctx.setTransform(dpr,0,0,dpr,0,0);
-      ctx.clearRect(0,0,width,height);
-
-      const pad = { l: 45, r: 12, t: 12, b: 31 };
-      const plotW = width-pad.l-pad.r, plotH = height-pad.t-pad.b;
-      const xMax = SIM_TIME;
-      let yMax = options.yMax || 1;
-      if (data && data.length && options.autoMax) {
-        const visible = data.slice(0, Math.max(1,index+1));
-        const vals = [];
-        visible.forEach(d => options.series.forEach(s => vals.push(d[s.key])));
-        yMax = Math.max(options.yMin || 0, ...vals.filter(Number.isFinite))*1.15;
-        if (options.fixedReference !== undefined) yMax = Math.max(yMax, options.fixedReference*1.1);
-        if (!Number.isFinite(yMax) || yMax <= 0) yMax = 1;
-      }
-      const yMin = options.yMin || 0;
-      const yRange = Math.max(0.0001, yMax-yMin);
-      const x = t => pad.l + (t/xMax)*plotW;
-      const y = v => pad.t + plotH - ((v-yMin)/yRange)*plotH;
-
-      ctx.font = "10px system-ui, sans-serif";
-      ctx.lineWidth = 1;
-      for (let j=0;j<=4;j++) {
-        const val = yMin + yRange*j/4;
-        const yy = y(val);
-        ctx.strokeStyle = "#e8eef0";
-        ctx.beginPath(); ctx.moveTo(pad.l,yy); ctx.lineTo(width-pad.r,yy); ctx.stroke();
-        ctx.fillStyle = "#71838d"; ctx.textAlign = "right"; ctx.textBaseline = "middle";
-        ctx.fillText(options.yFormat ? options.yFormat(val) : fmt(val,1), pad.l-7, yy);
-      }
-      for (let j=0;j<=5;j++) {
-        const t = xMax*j/5, xx=x(t);
-        ctx.strokeStyle = "#f0f3f4";
-        ctx.beginPath(); ctx.moveTo(xx,pad.t); ctx.lineTo(xx,pad.t+plotH); ctx.stroke();
-        ctx.fillStyle = "#71838d"; ctx.textAlign = "center"; ctx.textBaseline = "top";
-        ctx.fillText(String(Math.round(t)), xx, pad.t+plotH+7);
-      }
-      ctx.fillStyle = "#526873"; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
-      ctx.fillText("Time (min)", pad.l+plotW/2, height-1);
-      ctx.save(); ctx.translate(11,pad.t+plotH/2); ctx.rotate(-Math.PI/2);
-      ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(options.axisLabel,0,0); ctx.restore();
-
-      if (options.reference !== undefined && options.reference >= yMin && options.reference <= yMax) {
-        ctx.strokeStyle = "#bd7818"; ctx.lineWidth = 1.7; ctx.setLineDash([5,4]);
-        ctx.beginPath(); ctx.moveTo(pad.l,y(options.reference)); ctx.lineTo(width-pad.r,y(options.reference)); ctx.stroke(); ctx.setLineDash([]);
-      }
-      if (data && data.length) {
-        const last = Math.min(index, data.length-1);
-        options.series.forEach(s => {
-          ctx.strokeStyle = s.color; ctx.lineWidth = 2.2; ctx.lineJoin = "round"; ctx.lineCap = "round";
-          ctx.beginPath();
-          for (let i=0;i<=last;i++) {
-            const xx=x(data[i].t), yy=y(data[i][s.key]);
-            if (i===0) ctx.moveTo(xx,yy); else ctx.lineTo(xx,yy);
-          }
-          ctx.stroke();
-          if (last >= 0) {
-            const d=data[last]; ctx.fillStyle=s.color; ctx.beginPath(); ctx.arc(x(d.t),y(d[s.key]),3.2,0,Math.PI*2); ctx.fill();
-          }
-        });
-      }
-      ctx.strokeStyle="#cbd7dc"; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+plotH); ctx.lineTo(width-pad.r,pad.t+plotH); ctx.stroke();
-    }
-
-    function drawAllCharts(index) {
-      if (!results.length) return;
-      const p = params();
-      const levMax = Math.max(p.H*1.1, ...results.slice(0,index+1).map(d=>d.h))*1.05;
-      const flowMax = Math.max(1, ...results.slice(0,index+1).flatMap(d=>[d.fin,d.fout]))*1.15;
-      const corrMax = Math.max(1, ...results.slice(0,index+1).map(d=>Math.abs(d.correction)))*1.2;
-      drawChart($("levelChart"), results, index, { yMin:0, yMax:levMax, reference:p.sp, axisLabel:"Level (m)", series:[{key:"h",color:"#17825d"}], yFormat:v=>fmt(v,1) });
-      drawChart($("flowChart"), results, index, { yMin:0, yMax:flowMax, axisLabel:"Flow (m³/min)", series:[{key:"fin",color:"#2776b8"},{key:"fout",color:"#bd7818"}], yFormat:v=>fmt(v,1) });
-      drawChart($("controllerChart"), results, index, { yMin:-corrMax, yMax:corrMax, axisLabel:"Pump correction (m³/min)", series:[{key:"correction",color:"#7657ad"}], yFormat:v=>fmt(v,1) });
-    }
-
-    function drawEmptyCharts(p = params()) {
-      const eq = p.Cv > 0 ? Math.pow(Math.max(0,p.Fin0+p.surge)/p.Cv,2) : 0;
-      const flowMax = Math.max(1,p.Fin0+p.surge,p.Cv*Math.sqrt(Math.max(p.h0,0)))*1.2;
-      drawChart($("levelChart"), null, 0, { yMin:0, yMax:Math.max(p.H*1.1,eq*1.05), reference:p.sp, axisLabel:"Level (m)", series:[{key:"h",color:"#17825d"}] });
-      drawChart($("flowChart"), null, 0, { yMin:0, yMax:flowMax, axisLabel:"Flow (m³/min)", series:[{key:"fin",color:"#2776b8"},{key:"fout",color:"#bd7818"}] });
-      drawChart($("controllerChart"), null, 0, { yMin:-5, yMax:5, axisLabel:"Pump correction (m³/min)", series:[{key:"correction",color:"#7657ad"}] });
-    }
-
-    function setMode(nextMode) {
-      mode = nextMode;
-      $("openLoopBtn").classList.toggle("active", mode === "open");
-      $("closedLoopBtn").classList.toggle("active", mode === "closed");
-      $("openLoopBtn").setAttribute("aria-pressed", mode === "open");
-      $("closedLoopBtn").setAttribute("aria-pressed", mode === "closed");
-      $("controllerControls").classList.toggle("disabled", mode !== "closed");
-      resetSimulation();
-      if (mode === "open") $("statusText").textContent = "Open-loop selected. The inlet flow is not adjusted by a controller.";
-      else $("statusText").textContent = "PI feedback selected. The controller will adjust inlet pump flow to maintain the level setpoint.";
-    }
-
-    function markSettingsChanged() {
-      updateLabels();
-      if (hasRun) {
-        stopPlayback();
-        results = [];
-        hasRun = false;
-        $("runBtn").disabled = false;
-        $("pauseBtn").disabled = true;
-        $("pauseBtn").textContent = "Ⅱ Pause";
-        $("statusDot").className = "status-dot warning";
-        $("statusText").textContent = "Settings changed. Run the simulation again to calculate the new response.";
-        $("timeText").textContent = `Simulation time: 0.00 / ${SIM_TIME} min`;
-      } else {
-        $("statusText").textContent = "Inputs updated. Press Run simulation to see the response.";
-      }
-    }
-
-    function restoreDefaults() {
-      ids.forEach(id => { $(id).value = defaults[id]; });
-      $("fluidPreset").value = "1000";
-      updateLabels();
-      resetSimulation();
-    }
-
-    // Event handlers
-    $("openLoopBtn").addEventListener("click", () => setMode("open"));
-    $("closedLoopBtn").addEventListener("click", () => setMode("closed"));
-    $("runBtn").addEventListener("click", startSimulation);
-    $("pauseBtn").addEventListener("click", pauseSimulation);
-    $("resetBtn").addEventListener("click", resetSimulation);
-    $("restoreBtn").addEventListener("click", restoreDefaults);
-
-    ids.forEach(id => $(id).addEventListener("input", markSettingsChanged));
-    $("fluidPreset").addEventListener("change", () => {
-      if ($("fluidPreset").value !== "custom") $("density").value = $("fluidPreset").value;
-      markSettingsChanged();
-    });
-    $("density").addEventListener("input", () => { $("fluidPreset").value = "custom"; });
-    window.addEventListener("resize", () => {
-      if (results.length) drawAllCharts(playbackIndex); else drawEmptyCharts();
-    });
-
-    // Initial display
-    $("controllerControls").classList.add("disabled");
-    updateLabels();
-  </script>
+    },55);
+  }
+  function pause() {
+    if(!playing)return;
+    stopAnimation();setStatus('Paused at '+fmt(currentTime,2)+' min. Press Run response to continue.');
+  }
+  function reset() {
+    stopAnimation();frame=0;revealed=results.arr.length-1;currentTime=0;
+    drawTank(results.arr[0]);drawCharts(revealed);
+    setStatus('Reset to the initial steady state. The predicted response remains visible.');
+  }
+  function handleField(name,source) {
+    const meta=fields[name];
+    let v=Number($(source==='range'?name:name+'Num').value);
+    if(!Number.isFinite(v))v=values[name];
+    v=Math.min(meta.max,Math.max(meta.min,v));
+    setField(name,v);
+    if(name==='h0'||name==='cv')syncDisturbanceBounds();
+    buildAndRender();
+  }
+  for(const name of Object.keys(fields)){
+    $(name).addEventListener('input',()=>handleField(name,'range'));
+    $(name+'Num').addEventListener('change',()=>handleField(name,'number'));
+    $(name+'Num').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$(name+'Num').blur();}});
+  }
+  $('runBtn').addEventListener('click',run);
+  $('pauseBtn').addEventListener('click',pause);
+  $('resetBtn').addEventListener('click',reset);
+  window.addEventListener('resize',()=>{if(results)drawCharts(revealed);});
+  function initialize(){
+    for(const [name,value] of Object.entries(defaultValues))setField(name,value);
+    syncDisturbanceBounds();buildAndRender('Ready. Initial equilibrium is 4.00 m; the +3.00 m³/min inlet step occurs at 1.0 min.');
+  }
+  initialize();
+})();
+</script>
 </body>
 </html>
